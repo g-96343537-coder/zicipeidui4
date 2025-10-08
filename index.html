@@ -3,135 +3,178 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>生字配对成词语游戏（单字匹配版）</title>
+<title>生字配对游戏</title>
 <style>
-  body {
-    font-family: 'Microsoft YaHei', sans-serif;
-    background: #f0f9ff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-  }
-  h1 { color: #0077b6; }
-  .score { font-size: 1.2rem; margin-top: 10px; color: #0077b6; }
-  .game-container {
-    display: flex;
-    justify-content: space-around;
-    width: 90%;
-    max-width: 800px;
-    margin-top: 30px;
-  }
-  .words, .targets {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  .word {
-    padding: 10px 15px;
-    background: #fff;
-    border: 2px solid #0077b6;
-    border-radius: 10px;
-    text-align: center;
-    cursor: grab;
-    font-size: 1.5rem;
-    transition: transform 0.3s ease;
-  }
-  .word:active { transform: scale(1.1); }
-  .pair-box {
-    width: 100px;
-    height: 80px;
-    border: 2px dashed #90e0ef;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #caf0f8;
-    font-size: 1.5rem;
-  }
-  .flash { animation: flash 0.6s ease; }
-  @keyframes flash {
-    0% { box-shadow: 0 0 0px #fff; }
-    50% { box-shadow: 0 0 20px 10px #90ee90; }
-    100% { box-shadow: 0 0 0px #fff; }
-  }
-  .correct { background-color: #b7e4c7 !important; }
-  .wrong { background-color: #ffb3b3 !important; }
-  button {
-    margin-top: 25px;
-    padding: 10px 25px;
-    border: none;
-    border-radius: 8px;
-    background-color: #0077b6;
-    color: #fff;
-    cursor: pointer;
-    font-size: 1rem;
-  }
+body {
+  font-family: 'Microsoft YaHei', sans-serif;
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #fff; /* 全局文字白色 */
+  background: linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)),
+              url('https://i.pinimg.com/originals/cb/13/df/cb13df43527ed3942daec7c081732ea8.jpg') no-repeat center center;
+  background-size: cover;
+  overflow-x: hidden;
+}
+
+h1 { text-align: center; margin-top: 0; color: #fff; }
+p { color: #fff; }
+.score { font-size: 1.2rem; margin-top: 10px; z-index: 1; }
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 90%;
+  max-width: 500px;
+  margin-top: 20px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.word, .pair-box {
+  flex: 1;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease;
+}
+.word {
+  background: #ff7043; /* 左侧生字橘色背景 */
+  border: 2px solid #bf360c; 
+  cursor: grab;
+  color: #fff; /* 左侧文字白色 */
+}
+.word:active { transform: scale(1.1) rotate(-2deg); }
+
+.pair-box {
+  border: 2px dashed #ffab91; 
+  background: #ffe0b2; 
+  color: #0d47a1; /* 右侧文字深蓝色 */
+  position: relative;
+}
+.pair-box.flash { animation: flash 0.6s ease; }
+.pair-box.correct { 
+  background-color: #bf360c; 
+  color: #fff; /* 正确后变白色 */
+  border: 2px solid #d84315; 
+  animation: jump 0.5s; 
+}
+.pair-box.wrong { 
+  background-color: #f44336; 
+  color: #fff; /* 错误时显示白色 */
+  border: 2px solid #b71c1c; 
+  animation: shake 0.5s; 
+}
+
+@keyframes flash {0%{box-shadow:0 0 0px #fff;}50%{box-shadow:0 0 20px 10px #ffab91;}100%{box-shadow:0 0 0px #fff;}}
+@keyframes jump {0%{transform:translateY(0);}30%{transform:translateY(-15px);}60%{transform:translateY(0);}100%{transform:translateY(-5px);}}
+@keyframes shake {0%{transform:translateX(0);}25%{transform:translateX(-8px);}50%{transform:translateX(8px);}75%{transform:translateX(-8px);}100%{transform:translateX(0);}}
+
+button {
+  margin-top: 15px;
+  padding: 10px 25px;
+  border: none;
+  border-radius: 12px;
+  background-color: #bf360c; 
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+}
 </style>
 </head>
 <body>
-  <h1>生字配对成词语游戏（单字匹配版 ✨）</h1>
-  <p>拖动左侧的生字到右侧的单字框中，配对组成正确的词语。</p>
-  <div class="score" id="score">得分：0 / 10</div>
-  <div class="game-container">
-    <div class="words" id="wordList"></div>
-    <div class="targets" id="pairList"></div>
-  </div>
-  <button onclick="checkAnswers()">检查答案</button>
+<h1>生字配对游戏</h1>
+<p>左边生字固定顺序，右边目标框随机排列。拖动正确显示深橘色并跳跃动画，错误闪红回原位。</p>
+<div class="score" id="score">完成：0 / 6</div>
+<div class="game-container" id="gameContainer"></div>
+<div>
+  <button id="prevBtn" onclick="prevPage()" disabled>上一页</button>
+  <button id="nextBtn" onclick="nextPage()">下一页</button>
   <button onclick="resetGame()">重置</button>
-
-  <audio id="dingSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_977c5b3a05.mp3?filename=ding-36029.mp3"></audio>
-  <audio id="wrongSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_5d30f36c2e.mp3?filename=error-126627.mp3"></audio>
+</div>
 
 <script>
-const data = [
-  {word: '会', pair: '开'},
-  {word: '儿', pair: '小'},
-  {word: '歌', pair: '唱'},
+const allData = [
+  {word: '周', pair: '会'},
+  {word: '鸟', pair: '儿'},
+  {word: '唱', pair: '歌'},
   {word: '故', pair: '事'},
-  {word: '事', pair: '大'},
-  {word: '习', pair: '学'},
-  {word: '长', pair: '成'},
+  {word: '大', pair: '小'},
+  {word: '学', pair: '习'},
+  {word: '成', pair: '长'},
   {word: '知', pair: '识'},
-  {word: '笔', pair: '铅'},
-  {word: '画', pair: '图'}
+  {word: '书', pair: '包'},
+  {word: '语', pair: '文'},
+  {word: '上', pair: '学'},
+  {word: '校', pair: '门'}
 ];
 
-let shuffled = [];
+let currentPage = 0;
+const pageSize = 6;
 let score = 0;
 
-function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+function shuffle(arr) {
+  const array = [...arr];
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
 
-function createGame() {
-  shuffled = shuffle([...data]);
-  const wordList = document.getElementById('wordList');
-  const pairList = document.getElementById('pairList');
-  wordList.innerHTML = '';
-  pairList.innerHTML = '';
+function renderPage() {
+  const container = document.getElementById('gameContainer');
+  container.innerHTML = '';
   score = 0;
   updateScore();
 
-  shuffled.forEach(item => {
+  const start = currentPage * pageSize;
+  const end = Math.min(start + pageSize, allData.length);
+  const pageData = allData.slice(start, end);
+
+  for (let i = 0; i < pageData.length; i++) {
+    const row = document.createElement('div');
+    row.className = 'row';
+
     const wordDiv = document.createElement('div');
     wordDiv.className = 'word';
-    wordDiv.textContent = item.word;
+    wordDiv.textContent = pageData[i].word;
     wordDiv.draggable = true;
-    wordDiv.id = 'word-' + item.word;
+    wordDiv.id = 'word-' + i;
     wordDiv.ondragstart = drag;
-    wordDiv.onclick = () => speakWord(item.word);
-    wordList.appendChild(wordDiv);
-  });
+    row.appendChild(wordDiv);
 
-  const targets = shuffle([...data]);
-  targets.forEach(item => {
-    const box = document.createElement('div');
-    box.className = 'pair-box';
-    box.dataset.answer = item.word;
-    box.textContent = item.pair;
-    box.ondragover = allowDrop;
-    box.ondrop = drop;
-    pairList.appendChild(box);
-  });
+    container.appendChild(row);
+  }
+
+  const targets = shuffle(pageData);
+  const rows = container.querySelectorAll('.row');
+  for (let i = 0; i < targets.length; i++) {
+    const targetDiv = document.createElement('div');
+    targetDiv.className = 'pair-box';
+    targetDiv.dataset.word = targets[i].word;
+    targetDiv.dataset.pair = targets[i].pair;
+    targetDiv.dataset.full = targets[i].word + targets[i].pair;
+    targetDiv.textContent = targets[i].pair;
+    targetDiv.ondragover = allowDrop;
+    targetDiv.ondrop = drop;
+
+    rows[i].appendChild(targetDiv);
+  }
+
+  document.getElementById('prevBtn').disabled = currentPage === 0;
+  document.getElementById('nextBtn').disabled = end >= allData.length;
 }
 
 function allowDrop(e) { e.preventDefault(); }
@@ -141,45 +184,48 @@ function drop(e) {
   e.preventDefault();
   const dataId = e.dataTransfer.getData('text');
   const dragged = document.getElementById(dataId);
-  const existing = e.currentTarget.querySelector('.word');
-  if (existing) document.getElementById('wordList').appendChild(existing);
-  if (dragged) e.currentTarget.appendChild(dragged);
-}
+  const box = e.currentTarget;
 
-function checkAnswers() {
-  const boxes = document.querySelectorAll('.pair-box');
-  let correctCount = 0;
-  const ding = document.getElementById('dingSound');
-  const wrong = document.getElementById('wrongSound');
+  if (!dragged) return;
+  if (box.querySelector('.word')) return;
 
-  boxes.forEach(box => {
-    const wordDiv = box.querySelector('.word');
-    if (wordDiv) {
-      if (wordDiv.textContent === box.dataset.answer) {
-        box.classList.add('correct', 'flash');
-        box.classList.remove('wrong');
-        correctCount++;
-        ding.currentTime = 0; ding.play().catch(()=>{});
-      } else {
-        box.classList.add('wrong');
-        box.classList.remove('correct');
-        wrong.currentTime = 0; wrong.play().catch(()=>{});
-      }
-      setTimeout(() => box.classList.remove('flash'), 800);
-    } else {
-      box.classList.remove('correct','wrong','flash');
-    }
-  });
-  score = correctCount;
+  if (dragged.textContent === box.dataset.word) {
+    box.textContent = box.dataset.full;
+    box.classList.add('correct', 'flash');
+    dragged.draggable = false;
+    dragged.style.display = 'none';
+    speakWord(box.dataset.full);
+    score++;
+    setTimeout(() => box.classList.remove('flash'), 600);
+  } else {
+    box.classList.add('wrong', 'flash');
+    setTimeout(() => box.classList.remove('wrong', 'flash'), 600);
+  }
   updateScore();
-  if (correctCount === data.length) setTimeout(()=>alert('🎉 全部正确！太棒了！'), 200);
 }
 
 function updateScore() {
-  document.getElementById('score').textContent = `得分：${score} / ${data.length}`;
+  const pageEnd = Math.min(pageSize, allData.length - currentPage * pageSize);
+  document.getElementById('score').textContent = `完成：${score} / ${pageEnd}`;
 }
 
-function resetGame() { createGame(); }
+function nextPage() {
+  if ((currentPage + 1) * pageSize < allData.length) {
+    currentPage++;
+    renderPage();
+  }
+}
+
+function prevPage() {
+  if (currentPage > 0) {
+    currentPage--;
+    renderPage();
+  }
+}
+
+function resetGame() {
+  renderPage();
+}
 
 function speakWord(word) {
   try {
@@ -189,7 +235,7 @@ function speakWord(word) {
   } catch(e) { console.warn('语音播放失败', e); }
 }
 
-createGame();
+renderPage();
 </script>
 </body>
 </html>
