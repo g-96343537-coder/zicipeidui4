@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>生字配对成词语游戏（单字匹配版）</title>
+<style>
+  body {
+    font-family: 'Microsoft YaHei', sans-serif;
+    background: #f0f9ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  h1 { color: #0077b6; }
+  .score { font-size: 1.2rem; margin-top: 10px; color: #0077b6; }
+  .game-container {
+    display: flex;
+    justify-content: space-around;
+    width: 90%;
+    max-width: 800px;
+    margin-top: 30px;
+  }
+  .words, .targets {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  .word {
+    padding: 10px 15px;
+    background: #fff;
+    border: 2px solid #0077b6;
+    border-radius: 10px;
+    text-align: center;
+    cursor: grab;
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+  }
+  .word:active { transform: scale(1.1); }
+  .pair-box {
+    width: 100px;
+    height: 80px;
+    border: 2px dashed #90e0ef;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #caf0f8;
+    font-size: 1.5rem;
+  }
+  .flash { animation: flash 0.6s ease; }
+  @keyframes flash {
+    0% { box-shadow: 0 0 0px #fff; }
+    50% { box-shadow: 0 0 20px 10px #90ee90; }
+    100% { box-shadow: 0 0 0px #fff; }
+  }
+  .correct { background-color: #b7e4c7 !important; }
+  .wrong { background-color: #ffb3b3 !important; }
+  button {
+    margin-top: 25px;
+    padding: 10px 25px;
+    border: none;
+    border-radius: 8px;
+    background-color: #0077b6;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+</style>
+</head>
+<body>
+  <h1>生字配对成词语游戏（单字匹配版 ✨）</h1>
+  <p>拖动左侧的生字到右侧的单字框中，配对组成正确的词语。</p>
+  <div class="score" id="score">得分：0 / 10</div>
+  <div class="game-container">
+    <div class="words" id="wordList"></div>
+    <div class="targets" id="pairList"></div>
+  </div>
+  <button onclick="checkAnswers()">检查答案</button>
+  <button onclick="resetGame()">重置</button>
+
+  <audio id="dingSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_977c5b3a05.mp3?filename=ding-36029.mp3"></audio>
+  <audio id="wrongSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_5d30f36c2e.mp3?filename=error-126627.mp3"></audio>
+
+<script>
+const data = [
+  {word: '会', pair: '开'},
+  {word: '儿', pair: '小'},
+  {word: '歌', pair: '唱'},
+  {word: '故', pair: '事'},
+  {word: '事', pair: '大'},
+  {word: '习', pair: '学'},
+  {word: '长', pair: '成'},
+  {word: '知', pair: '识'},
+  {word: '笔', pair: '铅'},
+  {word: '画', pair: '图'}
+];
+
+let shuffled = [];
+let score = 0;
+
+function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+
+function createGame() {
+  shuffled = shuffle([...data]);
+  const wordList = document.getElementById('wordList');
+  const pairList = document.getElementById('pairList');
+  wordList.innerHTML = '';
+  pairList.innerHTML = '';
+  score = 0;
+  updateScore();
+
+  shuffled.forEach(item => {
+    const wordDiv = document.createElement('div');
+    wordDiv.className = 'word';
+    wordDiv.textContent = item.word;
+    wordDiv.draggable = true;
+    wordDiv.id = 'word-' + item.word;
+    wordDiv.ondragstart = drag;
+    wordDiv.onclick = () => speakWord(item.word);
+    wordList.appendChild(wordDiv);
+  });
+
+  const targets = shuffle([...data]);
+  targets.forEach(item => {
+    const box = document.createElement('div');
+    box.className = 'pair-box';
+    box.dataset.answer = item.word;
+    box.textContent = item.pair;
+    box.ondragover = allowDrop;
+    box.ondrop = drop;
+    pairList.appendChild(box);
+  });
+}
+
+function allowDrop(e) { e.preventDefault(); }
+function drag(e) { e.dataTransfer.setData('text', e.target.id); }
+
+function drop(e) {
+  e.preventDefault();
+  const dataId = e.dataTransfer.getData('text');
+  const dragged = document.getElementById(dataId);
+  const existing = e.currentTarget.querySelector('.word');
+  if (existing) document.getElementById('wordList').appendChild(existing);
+  if (dragged) e.currentTarget.appendChild(dragged);
+}
+
+function checkAnswers() {
+  const boxes = document.querySelectorAll('.pair-box');
+  let correctCount = 0;
+  const ding = document.getElementById('dingSound');
+  const wrong = document.getElementById('wrongSound');
+
+  boxes.forEach(box => {
+    const wordDiv = box.querySelector('.word');
+    if (wordDiv) {
+      if (wordDiv.textContent === box.dataset.answer) {
+        box.classList.add('correct', 'flash');
+        box.classList.remove('wrong');
+        correctCount++;
+        ding.currentTime = 0; ding.play().catch(()=>{});
+      } else {
+        box.classList.add('wrong');
+        box.classList.remove('correct');
+        wrong.currentTime = 0; wrong.play().catch(()=>{});
+      }
+      setTimeout(() => box.classList.remove('flash'), 800);
+    } else {
+      box.classList.remove('correct','wrong','flash');
+    }
+  });
+  score = correctCount;
+  updateScore();
+  if (correctCount === data.length) setTimeout(()=>alert('🎉 全部正确！太棒了！'), 200);
+}
+
+function updateScore() {
+  document.getElementById('score').textContent = `得分：${score} / ${data.length}`;
+}
+
+function resetGame() { createGame(); }
+
+function speakWord(word) {
+  try {
+    const utter = new SpeechSynthesisUtterance(word);
+    utter.lang = 'zh-CN';
+    window.speechSynthesis.speak(utter);
+  } catch(e) { console.warn('语音播放失败', e); }
+}
+
+createGame();
+</script>
+</body>
+</html>
